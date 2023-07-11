@@ -232,6 +232,27 @@ public class FlutterLocalNotificationsPlugin
     }
   }
 
+  protected static PendingIntent makeContentIntent(
+      Context context, NotificationDetails notificationDetails) {
+    // ZULIP AD HOC: URL scheme; assumption that tag is unique; activity class name; perhaps flags
+
+    // If several notifications are active at once (e.g., from different conversations
+    // in a messaging app), it's important that each one have a different URL.
+    // Otherwise, the system will see the Intents as equal, so will reuse the PendingIntent,
+    // and all notifications will use the same payload.  See doc:
+    //   https://developer.android.com/reference/android/app/PendingIntent
+    // and in particular the discussion of Intent.filterEquals.
+    Uri intentUrl = new Uri.Builder()
+        .scheme("zulip").authority("notification").path(notificationDetails.tag)
+        .build();
+
+    Intent intent = new Intent(Intent.ACTION_VIEW, intentUrl)
+        .setClassName(context, "com.zulip.flutter.MainActivity") // ZULIP AD HOC
+        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        .putExtra(PAYLOAD, notificationDetails.payload);
+    return PendingIntent.getActivity(context, notificationDetails.id, intent, PendingIntent.FLAG_IMMUTABLE);
+  }
+
   protected static Notification createNotification(
       Context context, NotificationDetails notificationDetails) {
     NotificationChannelDetails notificationChannelDetails =
@@ -239,16 +260,7 @@ public class FlutterLocalNotificationsPlugin
     if (canCreateNotificationChannel(context, notificationChannelDetails)) {
       setupNotificationChannel(context, notificationChannelDetails);
     }
-    Intent intent = getLaunchIntent(context);
-    intent.setAction(SELECT_NOTIFICATION);
-    intent.putExtra(NOTIFICATION_ID, notificationDetails.id);
-    intent.putExtra(PAYLOAD, notificationDetails.payload);
-    int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-    if (VERSION.SDK_INT >= VERSION_CODES.M) {
-      flags |= PendingIntent.FLAG_IMMUTABLE;
-    }
-    PendingIntent pendingIntent =
-        PendingIntent.getActivity(context, notificationDetails.id, intent, flags);
+    PendingIntent pendingIntent = makeContentIntent(context, notificationDetails);
     DefaultStyleInformation defaultStyleInformation =
         (DefaultStyleInformation) notificationDetails.styleInformation;
     NotificationCompat.Builder builder =
@@ -1766,6 +1778,16 @@ public class FlutterLocalNotificationsPlugin
   }
 
   private Boolean sendNotificationPayloadMessage(Intent intent) {
+    // ZULIP AD HOC
+    if (Intent.ACTION_VIEW.equals(intent.getAction())
+        && intent.getData().getScheme().equals("zulip")
+        && intent.getData().getAuthority().equals("notification")) {
+      Map<String, Object> data = extractNotificationResponseMap(intent);
+      data.put(NOTIFICATION_RESPONSE_TYPE, 0);
+      channel.invokeMethod("didReceiveNotificationResponse", data);
+      return true;
+    }
+
     if (SELECT_NOTIFICATION.equals(intent.getAction())
         || SELECT_FOREGROUND_NOTIFICATION_ACTION.equals(intent.getAction())) {
       Map<String, Object> notificationResponse = extractNotificationResponseMap(intent);
