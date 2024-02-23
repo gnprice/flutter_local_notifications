@@ -1250,6 +1250,7 @@ public class FlutterLocalNotificationsPlugin
     Log.d(TAG, "showNotification 2: tag " + notificationDetails.tag
         + ", id " + notificationDetails.id
         + ", notif " + notification);
+//    Log.d(TAG, "zulip_notification");
 
     if (notificationDetails.tag != null) {
       notificationManagerCompat.notify(
