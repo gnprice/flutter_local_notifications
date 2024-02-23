@@ -361,6 +361,7 @@ public class FlutterLocalNotificationsPlugin
       }
     }
 
+    Log.d(TAG, "building notif...");
     setSmallIcon(context, notificationDetails, builder);
     builder.setLargeIcon(
         getBitmapFromSource(
@@ -452,7 +453,13 @@ public class FlutterLocalNotificationsPlugin
       NotificationDetails notificationDetails,
       NotificationCompat.Builder builder) {
     if (!StringUtils.isNullOrEmpty(notificationDetails.icon)) {
-      builder.setSmallIcon(getDrawableResourceId(context, notificationDetails.icon));
+      int resourceId = getDrawableResourceId(context, notificationDetails.icon);
+      Log.d(TAG, "setSmallIcon " + notificationDetails.icon + " -> " + resourceId);
+      if (resourceId == 0) {
+        throw new IllegalArgumentException("icon resource not found: @drawable/"
+          + notificationDetails.icon);
+      }
+      builder.setSmallIcon(resourceId);
     } else {
       SharedPreferences sharedPreferences =
           context.getSharedPreferences(SHARED_PREFERENCES_KEY, Context.MODE_PRIVATE);
@@ -793,7 +800,11 @@ public class FlutterLocalNotificationsPlugin
   }
 
   private static int getDrawableResourceId(Context context, String name) {
-    return context.getResources().getIdentifier(name, DRAWABLE, context.getPackageName());
+    int result = context.getResources().getIdentifier(name, DRAWABLE, context.getPackageName());
+    if (result == 0) {
+      Log.w(TAG, "not found: @drawable/" + name);
+    }
+    return result;
   }
 
   @SuppressWarnings("unchecked")
