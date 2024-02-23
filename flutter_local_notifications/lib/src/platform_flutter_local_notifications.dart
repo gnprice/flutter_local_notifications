@@ -301,6 +301,7 @@ class AndroidFlutterLocalNotificationsPlugin
     AndroidNotificationDetails? notificationDetails,
     String? payload,
   }) {
+    print('notif android show: id $id, body $body');
     validateId(id);
     return _channel.invokeMethod(
       'show',

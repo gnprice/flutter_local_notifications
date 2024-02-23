@@ -1243,8 +1243,13 @@ public class FlutterLocalNotificationsPlugin
   }
 
   static void showNotification(Context context, NotificationDetails notificationDetails) {
+    Log.d(TAG, "showNotification 0");
     Notification notification = createNotification(context, notificationDetails);
+    Log.d(TAG, "showNotification 1");
     NotificationManagerCompat notificationManagerCompat = getNotificationManager(context);
+    Log.d(TAG, "showNotification 2: tag " + notificationDetails.tag
+        + ", id " + notificationDetails.id
+        + ", notif " + notification);
 
     if (notificationDetails.tag != null) {
       notificationManagerCompat.notify(
@@ -1252,6 +1257,7 @@ public class FlutterLocalNotificationsPlugin
     } else {
       notificationManagerCompat.notify(notificationDetails.id, notification);
     }
+    Log.d(TAG, "showNotification 3");
   }
 
   private static void zonedScheduleNextNotification(
@@ -1397,6 +1403,7 @@ public class FlutterLocalNotificationsPlugin
 
   @Override
   public void onMethodCall(MethodCall call, @NonNull Result result) {
+    Log.d(TAG, "onMethodCall: " + call.method);
     switch (call.method) {
       case INITIALIZE_METHOD:
         initialize(call, result);
@@ -1645,6 +1652,7 @@ public class FlutterLocalNotificationsPlugin
         || hasInvalidBigPictureResources(result, notificationDetails)
         || hasInvalidRawSoundResource(result, notificationDetails)
         || hasInvalidLedDetails(result, notificationDetails)) {
+      Log.w(TAG, "invalid notification details");
       return null;
     }
 
@@ -1728,6 +1736,7 @@ public class FlutterLocalNotificationsPlugin
   }
 
   private void cancelNotification(Integer id, String tag) {
+    Log.d(TAG, "cancelNotification: id " + id + " , tag " + tag);
     Intent intent = new Intent(applicationContext, ScheduledNotificationReceiver.class);
     PendingIntent pendingIntent = getBroadcastPendingIntent(applicationContext, id, intent);
     AlarmManager alarmManager = getAlarmManager(applicationContext);
@@ -1742,6 +1751,7 @@ public class FlutterLocalNotificationsPlugin
   }
 
   private void cancelAllNotifications(Result result) {
+    Log.d(TAG, "cancelAllNotifications");
     NotificationManagerCompat notificationManager = getNotificationManager(applicationContext);
     notificationManager.cancelAll();
     ArrayList<NotificationDetails> scheduledNotifications =
